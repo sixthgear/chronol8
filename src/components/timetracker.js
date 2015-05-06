@@ -10,11 +10,13 @@ var TimeTrackerApp = React.createClass({
             scr: this.STATE.SUBMIT,
             loading: false,
             email: "",
-            time: "",
+            time: 0,
         }
     },
 
+    // called when form is submitted
     submit: function(event) {
+
         event.preventDefault();
 
         // invalid form
@@ -25,7 +27,7 @@ var TimeTrackerApp = React.createClass({
         this.setState({
             loading: true,
             email: this.refs.submit.state.email,
-            time: this.refs.submit.state.time,
+            time: this.state.time + this.refs.submit.state.time,
         });
     },
 
@@ -39,6 +41,7 @@ var TimeTrackerApp = React.createClass({
     restart: function(event) {
         event.preventDefault();
         this.setState({
+            loading: false,
             scr: this.STATE.SUBMIT
         });
     },
@@ -68,24 +71,30 @@ var TimeTrackerApp = React.createClass({
 var SubmitScreen = React.createClass({
 
     workOptions: [
-        'Time working on visual effects for a movie',
-        'Time spent reviewing the work of a junior artist'
+        {id: 1, name: 'Time working on visual effects for a movie'},
+        {id: 2, name: 'Time spent reviewing the work of a junior artist'}
     ],
 
     getInitialState: function() {
         return {
             email: this.props.email,
-            time: "",
+            time: null,
             message: "",
-            work: "",
+            work: 1,
             fields: []
         }
     },
 
     isValid: function() {
+
+        if (typeof this.refs.email == "undefined")
+            return false;
+        if (typeof this.refs.time == "undefined")
+            return false;
+
         return (
-            !this.refs.email.state.isError &&
-            !this.refs.time.state.isError &&
+            this.state.email.length > 0 && !this.refs.email.state.isError &&
+            this.state.time != null && !this.refs.time.state.isError &&
             !this.refs.message.state.isError &&
             !this.refs.work.state.isError
         )
@@ -95,7 +104,7 @@ var SubmitScreen = React.createClass({
         this.replaceState(this.getInitialState());
     },
 
-    handleEmailChange: function() {
+    handleEmailChange: function(event) {
 
         var re = new RegExp("^[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$");
         var email = event.target.value;
@@ -110,24 +119,66 @@ var SubmitScreen = React.createClass({
 
     },
 
-    handleTimeChange: function() {
-        this.setState({email: event.target.value});
+    handleTimeChange: function(event) {
+
+        var time = event.target.value.trim();
+        var patterns = [
+            {
+                re: /^(\d+)$/i, // 42
+                fn: function(m) { return {hours: 0, minutes: parseInt(m[1])}; }
+            },
+            {
+                re: /^(\d+) *(minutes|mins|min|m)$/i, // 42 min
+                fn: function(m) { return {hours: 0, minutes: parseInt(m[1])}; }
+            },
+            {
+                re: /^([\d\.]+) *(hours|hour|hrs|hr|h)$/i, // 2 hours
+                fn: function(m) { return {hours: parseFloat(m[1]), minutes: 0}; }
+            },
+            {
+                re: /^(\d+):(\d+)$/, // 7:42
+                fn: function(m) { return {hours: parseInt(m[1]), minutes: parseInt(m[2])}; }
+            },
+            {
+                re: /^(\d+) *(hours|hour|hrs|hr|h) *(\d+) *(minutes|mins|min|m)?$/, // 7h 42m
+                fn: function(m) { return {hours: parseInt(m[1]), minutes: parseInt(m[3])}; }
+            }
+        ]
+
+        var result;
+        for (p in patterns) {
+            var match = patterns[p].re.exec(time);
+            if (match) {
+                result = patterns[p].fn(match);
+                break;
+            }
+        }
+
+        this.refs.time.setState({
+            isValid: time.length > 0 && result != null,
+            isError: time.length > 0 && result == null
+        });
+
+        if (result)
+            this.setState({time: result.hours * 60 + result.minutes});
+        else
+            this.setState({time: null});
     },
 
     handleMessageChange: function() {
-        this.setState({email: event.target.value});
+        this.setState({message: event.target.value});
     },
 
-    handleWorkChange: function() {
-        this.setState({email: event.target.value});
+    handleWorkChange: function(option) {
+        this.setState({work: option});
     },
 
     render: function() {
 
         var email = <TextField ref="email" name="email" onChange={this.handleEmailChange} value={this.state.email} />;
         var time = <TextField ref="time" name="time" onChange={this.handleTimeChange} value={this.state.time} />;
-        var message = <TextField ref="message" name="message" onChange={this.handleMessageChange} value={this.state.message}/>;
-        var work = <SelectField ref="work" name="work" options={this.workOptions} onChange={this.handleWorkChange} value={this.state.work} />;
+        var message = <TextField ref="message" name="message (optional)" onChange={this.handleMessageChange} value={this.state.message}/>;
+        var work = <SelectField ref="work" name="work" selected={this.state.work} options={this.workOptions} onChange={this.handleWorkChange} value={this.state.work} />;
 
         return (
             <form onSubmit={this.props.onSubmit}>
@@ -146,7 +197,7 @@ var SubmitScreen = React.createClass({
                     <ClearButton onClick={this.reset}/>
                 </div>
                 <div className="col-xs-6">
-                    <SubmitButton label="Next"/>
+                    <SubmitButton disabled={!this.isValid()} label="Next"/>
                 </div>
                 </div>
 
@@ -157,6 +208,10 @@ var SubmitScreen = React.createClass({
 
 var SuccessScreen = React.createClass({
     render: function() {
+
+        var hours = Math.floor(this.props.time / 60);
+        var minutes = this.props.time % 60;
+
         return (
             <div>
                 <form onSubmit={this.props.onSubmit}>
@@ -164,9 +219,9 @@ var SuccessScreen = React.createClass({
                     <h1>Timesheet Submitted</h1>
 
                     <p>Thank you <b>{this.props.email}</b>.</p>
-                    <p>You have logged {this.props.hours}h and {this.props.minutes}min of work today.</p>
+                    <p>You have logged {hours}h and {minutes}min of work today.</p>
 
-                    <SubmitButton label="Start Again" />
+                    <SubmitButton disabled={false} label="Start Again" />
                 </form>
             </div>
         );
@@ -195,8 +250,12 @@ var ClearButton = React.createClass({
 var SubmitButton = React.createClass({
 
     render: function() {
+        var classes = "btn btn-primary btn-lg pull-right";
+        if (this.props.disabled)
+            classes += " disabled";
+
         return (
-            <button type="submit" className="btn btn-primary btn-lg pull-right">
+            <button type="submit" className={classes}>
                 {this.props.label}
             </button>
         );
@@ -212,11 +271,29 @@ var SelectField = React.createClass({
         }
     },
 
+    onChange: function(id) {
+        this.props.onChange(id);
+    },
+
     render: function() {
+
+        var select = this;
+
         return (
-            <div className="btn-group-vertical work" role="group" aria-label="...">
-                {this.props.options.map(function(option) {
-                    return <button type="button" className="btn btn-default">{option}</button>;
+            <div className="btn-group-vertical work" role="group">
+                {this.props.options.map(function(option, i) {
+
+                    var classes = React.addons.classSet({
+                        'btn': true,
+                        'btn-default': true,
+                        'selected': select.props.selected == option.id
+                    });
+
+                    return <button
+                        key={option.id}
+                        type="button"
+                        className={classes}
+                        onClick={select.onChange.bind(select, option.id)}>{option.name}</button>;
                 })}
             </div>
         );
@@ -242,8 +319,10 @@ var TextField = React.createClass({
         });
 
         var icon = 'form-control-feedback glyphicon ';
+
         if (this.state.isValid)
             icon += 'glyphicon-ok';
+
         else if (this.state.isError)
             icon += 'glyphicon-remove';
 

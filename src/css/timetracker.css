@@ -11,3 +11,6 @@
   .work button {
     text-align: left;
     width: 100%; }
+    .work button.selected {
+      background: #5FABFC;
+      color: #FFF; }
