@@ -1,4 +1,4 @@
-var SubmitScreen = React.createClass({
+var SubmitScreen = React.createClass({displayName: "SubmitScreen",
 
     workOptions: [
         {id: 1, name: 'Time working on visual effects for a movie'},
@@ -106,33 +106,29 @@ var SubmitScreen = React.createClass({
 
     render: function() {
 
-        var email = <TextField ref="email" name="email" onChange={this.handleEmailChange} value={this.state.email} />;
-        var time = <TextField ref="time" name="time" onChange={this.handleTimeChange} value={this.state.time} />;
-        var message = <TextField ref="message" name="message (optional)" onChange={this.handleMessageChange} value={this.state.message}/>;
-        var work = <SelectField ref="work" name="work" selected={this.state.work} options={this.workOptions} onChange={this.handleWorkChange} value={this.state.work} />;
-
         return (
-            <form onSubmit={this.props.onSubmit}>
+            React.createElement("form", {onSubmit: this.props.onSubmit}, 
 
-                <h1>Submit Timesheet</h1>
+                React.createElement("h1", null, "Submit Timesheet"), 
 
-                {email}
-                {time}
-                {message}
+                React.createElement(TextField, {ref: "email", name: "email", onChange: this.handleEmailChange, value: this.state.email}), 
+                React.createElement(TextField, {ref: "time", name: "time", onChange: this.handleTimeChange, value: this.state.time}), 
+                React.createElement(TextField, {ref: "message", name: "message (optional)", onChange: this.handleMessageChange, value: this.state.message}), 
 
-                <p>What type of work is this for?</p>
-                {work}
+                React.createElement("p", null, "What type of work is this for?"), 
 
-                <div className="row">
-                <div className="col-xs-6">
-                    <ClearButton onClick={this.reset}/>
-                </div>
-                <div className="col-xs-6">
-                    <SubmitButton disabled={!this.isValid()} label="Next"/>
-                </div>
-                </div>
+                React.createElement(SelectField, {ref: "work", name: "work", selected: this.state.work, options: this.workOptions, onChange: this.handleWorkChange, value: this.state.work}), 
 
-            </form>
+                React.createElement("div", {className: "row"}, 
+                React.createElement("div", {className: "col-xs-6"}, 
+                    React.createElement(ClearButton, {onClick: this.reset})
+                ), 
+                React.createElement("div", {className: "col-xs-6"}, 
+                    React.createElement(SubmitButton, {disabled: !this.isValid(), label: "Next"})
+                )
+                )
+
+            )
         );
     }
 });

@@ -1,4 +1,4 @@
-var TimeTrackerApp = React.createClass({
+var TimeTrackerApp = React.createClass({displayName: "TimeTrackerApp",
 
     STATE: {
         SUBMIT: 1,
@@ -51,31 +51,22 @@ var TimeTrackerApp = React.createClass({
         var scr, overlay;
 
         if (this.state.scr == this.STATE.SUBMIT)
-            scr = <SubmitScreen ref="submit" email={this.state.email} onSubmit={this.submit} />;
+            scr = React.createElement(SubmitScreen, {ref: "submit", email: this.state.email, onSubmit: this.submit});
 
         else if (this.STATE.SUCCESS)
-            scr = <SuccessScreen ref="success" email={this.state.email} time={this.state.time} onSubmit={this.restart} />;
+            scr = React.createElement(SuccessScreen, {ref: "success", email: this.state.email, time: this.state.time, onSubmit: this.restart});
 
         if (this.state.loading)
-            overlay = <LoadingOverlay callback={this.success} delay={1000} />
+            overlay = React.createElement(LoadingOverlay, {callback: this.success, delay: 1000})
 
         return (
-            <div>
-                <div className="container">{scr}</div>
-                {overlay}
-            </div>
+            React.createElement("div", null, 
+                React.createElement("div", {className: "container"}, scr), 
+                overlay
+            )
         );
     }
 });
 
 
-var LoadingOverlay = React.createClass({
-    componentDidMount: function() {
-        setTimeout(this.props.callback, this.props.delay);
-    },
-    render: function() {
-        return <div className="loading"></div>;
-    }
-});
-
-React.render(<TimeTrackerApp />, document.body);
+React.render(React.createElement(TimeTrackerApp, null), document.body);
